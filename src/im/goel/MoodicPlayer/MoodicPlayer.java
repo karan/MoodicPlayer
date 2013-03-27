@@ -1,8 +1,16 @@
 package im.goel.MoodicPlayer;
 
 /**
- * @see API docs: https://developers.google.com/youtube/2.0/developers_guide_java
- * @see GWT2SWF: http://code.google.com/p/gwt2swf/wiki/Usage
+ * TODO Use GrooveShark. Sort on genre and mood
+ * HAPPY: excited, glad, joyful, cheerful, exciting
+ * SAD: gloomy, blue, depressed, hopeless
+ * RELAXED: calm, dreamy, serene, tranquil
+ * ANGRY: agressive, furious, disturbing, distress 
+ */
+
+/**
+ * @see JaCo: http://jacomp3player.sourceforge.net/guide/javadocs/jaco/mp3/player/MP3Player.html
+ * @see JGroove: http://jgroove.googlecode.com/svn/trunk/javadoc/index.html
  */
 
 import java.awt.BorderLayout;
@@ -134,16 +142,7 @@ public class MoodicPlayer implements ActionListener {
 	// for pagination
 	public void printEntireVideoFeed(YouTubeService service, VideoFeed videoFeed) throws MalformedURLException, 
 	IOException, ServiceException {
-		List<String> allPages = new ArrayList<String>();
-		while(videoFeed != null && listOfIds.size() <= 20) {
-			listOfIds.addAll(printVideoFeed(videoFeed));
-			if(videoFeed.getNextLink() != null) {
-				videoFeed = service.getFeed(new URL(videoFeed.getNextLink().getHref()), 
-						VideoFeed.class);
-			} else {
-				videoFeed = null;
-			}
-		}
+		listOfIds.addAll(printVideoFeed(videoFeed));
 	}
 
 	// prints feed from 1 single page (videofeed)
@@ -166,7 +165,6 @@ public class MoodicPlayer implements ActionListener {
 		YouTubeMediaContent mediaContent = mediaGroup.getYouTubeContents().get(0);
 		
 		YtStatistics stats = videoEntry.getStatistics();
-		com.google.gdata.data.extensions.Rating rating = videoEntry.getRating();
 		if (mediaContent.getDuration() >= 240 && stats.getViewCount() >= 50000) {
 			entryID = mediaGroup.getVideoId();
 		}
