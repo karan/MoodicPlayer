@@ -1,4 +1,4 @@
 MoodicPlayer
 ============
 
-Play music according to your mood, in your language!
+Minimal music player to give beats to your mood!

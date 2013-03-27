@@ -1,6 +1,7 @@
 package im.goel.MoodicPlayer;
 
 /**
+ * TODO: Consider using LinkedList instead of ArrayList
  * @see JaCo: http://jacomp3player.sourceforge.net/guide/javadocs/jaco/mp3/player/MP3Player.html
  * @see JGroove: http://jgroove.googlecode.com/svn/trunk/javadoc/index.html
  */
