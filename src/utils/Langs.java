@@ -5,7 +5,6 @@ public class Langs {
 	public Langs() {}
 
 	private String[] langs = {
-			"All Languages", 
 			"English", 
 			"Mandarin", 
 			"Spanish", 

@@ -8,5 +8,6 @@
 	<classpathentry kind="lib" path="C:/Users/Karan/Desktop/Dropbox/Eclipse Projects/MoodicPlayer/lib/gdata-youtube-2.0.jar"/>
 	<classpathentry kind="lib" path="C:/Users/Karan/Desktop/Dropbox/Eclipse Projects/MoodicPlayer/lib/guava-14.0.1.jar"/>
 	<classpathentry kind="lib" path="C:/Users/Karan/Desktop/Dropbox/Eclipse Projects/MoodicPlayer/lib/mail.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Karan/Desktop/Dropbox/Eclipse Projects/MoodicPlayer/lib/gwt2swf-0.6.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
