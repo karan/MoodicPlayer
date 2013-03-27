@@ -55,6 +55,7 @@ public class MoodicPlayer implements ActionListener {
 		new MoodicPlayer();
 	}
 	
+	private List<String> listOfIds;
 	private JFrame frame;
 	private JPanel north, center, south;
 	private JLabel tempLabel;
@@ -93,8 +94,8 @@ public class MoodicPlayer implements ActionListener {
 			String mood = moodSelector.getSelectedItem().toString().toLowerCase();
 			String lang = langSelector.getSelectedItem().toString().toLowerCase();
 			try {
-				List<String> listOfIds = new ArrayList<String>();
-				listOfIds = find(mood, lang);
+				listOfIds = new ArrayList<String>();
+				find(mood, lang);
 				System.out.println(listOfIds.toString());
 				tempLabel.setText("hello");
 			} catch (IOException e1) {
@@ -105,7 +106,7 @@ public class MoodicPlayer implements ActionListener {
 		}
 	}	
 
-	public List<String> find(String mood, String lang) throws IOException, ServiceException {
+	public void find(String mood, String lang) throws IOException, ServiceException {
 		YouTubeQuery query = new YouTubeQuery(new URL("http://gdata.youtube.com/feeds/api/videos"));
 		query.setOrderBy(YouTubeQuery.OrderBy.VIEW_COUNT);
 		YouTubeService service = new YouTubeService(null);
@@ -127,23 +128,22 @@ public class MoodicPlayer implements ActionListener {
 		query.addCategoryFilter(categoryFilter2);
 		
 		VideoFeed videoFeed = service.query(query, VideoFeed.class);
-		return printEntireVideoFeed(service, videoFeed);
+		printEntireVideoFeed(service, videoFeed);
 	}
 
 	// for pagination
-	public List<String> printEntireVideoFeed(YouTubeService service, VideoFeed videoFeed) throws MalformedURLException, 
+	public void printEntireVideoFeed(YouTubeService service, VideoFeed videoFeed) throws MalformedURLException, 
 	IOException, ServiceException {
 		List<String> allPages = new ArrayList<String>();
-		do {
-			allPages.addAll(printVideoFeed(videoFeed));
+		while(videoFeed != null && listOfIds.size() <= 20) {
+			listOfIds.addAll(printVideoFeed(videoFeed));
 			if(videoFeed.getNextLink() != null) {
 				videoFeed = service.getFeed(new URL(videoFeed.getNextLink().getHref()), 
 						VideoFeed.class);
 			} else {
 				videoFeed = null;
 			}
-		} while(videoFeed != null && allPages.size() <= 20);
-		return allPages;
+		}
 	}
 
 	// prints feed from 1 single page (videofeed)
@@ -167,8 +167,7 @@ public class MoodicPlayer implements ActionListener {
 		
 		YtStatistics stats = videoEntry.getStatistics();
 		com.google.gdata.data.extensions.Rating rating = videoEntry.getRating();
-		if (mediaContent.getDuration() >= 240 && stats.getViewCount() >= 50000
-				&& rating.getAverage() >= 4.0) {
+		if (mediaContent.getDuration() >= 240 && stats.getViewCount() >= 50000) {
 			entryID = mediaGroup.getVideoId();
 		}
 		return entryID;
