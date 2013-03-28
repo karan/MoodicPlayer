@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lfm status="ok">
+<track>
+    <id>16203397</id>
+    <name>Campfire Song Song</name>
+            <mbid>2aa6f04f-bdb9-49e4-a06c-76945c3f4b8d</mbid>
+            <url>http://www.last.fm/music/Spongebob+Squarepants/_/Campfire+Song+Song</url>
+    <duration>55000</duration>
+    <streamable fulltrack="0">1</streamable>    
+        <listeners>17726</listeners>
+    <playcount>53015</playcount>
+        <artist>
+        <name>Spongebob Squarepants</name>
+                <mbid>0eb58fc2-a70b-4e02-a503-115e42da9b4e</mbid>
+                    <url>http://www.last.fm/music/Spongebob+Squarepants</url>
+    </artist>
+        <album position="4">
+        <artist>Spongebob Squarepants</artist>
+        <title>SpongeBob's Greatest Hits</title>
+                <mbid>18ca1fbc-e11b-4468-9600-7a173d6d715c</mbid>
+                    <url>http://www.last.fm/music/Spongebob+Squarepants/SpongeBob%27s+Greatest+Hits</url>        
+        <image size="small">http://userserve-ak.last.fm/serve/64s/70787570.png</image>
+        <image size="medium">http://userserve-ak.last.fm/serve/126/70787570.png</image>
+        <image size="large">http://userserve-ak.last.fm/serve/174s/70787570.png</image>
+        <image size="extralarge">http://userserve-ak.last.fm/serve/300x300/70787570.png</image>
+    </album>
+        <toptags>
+        <tag>
+	  <name>campfire song</name>
+	  <url>http://www.last.fm/tag/campfire%20song</url>
+	</tag>
+        <tag>
+	  <name>campfire</name>
+	  <url>http://www.last.fm/tag/campfire</url>
+	</tag>
+        <tag>
+	  <name>cheerful</name>
+	  <url>http://www.last.fm/tag/cheerful</url>
+	</tag>
+        <tag>
+	  <name>upbeat</name>
+	  <url>http://www.last.fm/tag/upbeat</url>
+	</tag>
+        <tag>
+	  <name>happy hour</name>
+	  <url>http://www.last.fm/tag/happy%20hour</url>
+	</tag>
+      </toptags>
+    </track></lfm>

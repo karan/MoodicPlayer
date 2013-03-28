@@ -20,13 +20,13 @@ public class Moods {
 	
 	public List<String> getSubMoods(String mood) {
 		if (mood.equals("happy")) {
-			return Arrays.asList("happy", "excited", "glad", "joyful", "cheerful", "exciting");
+			return Arrays.asList("happy", "excited", "joyful", "cheerful");
 		} else if (mood.equals("sad")) {
-			return Arrays.asList("sad", "gloomy", "blue", "depressed", "hopeless");
+			return Arrays.asList("sad", "gloomy", "depressed", "hopeless");
 		} else if (mood.equals("relaxed")) {
-			return Arrays.asList("relaxed", "calm", "dreamy", "serene", "tranquil");
+			return Arrays.asList("relaxed", "calm", "serene", "tranquil");
 		} else {
-			return Arrays.asList("angry", "agressive", "furious", "disturbing", "distress");
+			return Arrays.asList("angry", "agressive", "furious", "distress");
 		}
 	}
 

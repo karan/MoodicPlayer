@@ -2,13 +2,6 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/J2SE-1.5"/>
-	<classpathentry kind="lib" path="C:/Users/Karan/Desktop/Dropbox/Eclipse Projects/MoodicPlayer/lib/gdata-client-1.0.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Karan/Desktop/Dropbox/Eclipse Projects/MoodicPlayer/lib/gdata-core-1.0.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Karan/Desktop/Dropbox/Eclipse Projects/MoodicPlayer/lib/gdata-media-1.0.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Karan/Desktop/Dropbox/Eclipse Projects/MoodicPlayer/lib/gdata-youtube-2.0.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Karan/Desktop/Dropbox/Eclipse Projects/MoodicPlayer/lib/guava-14.0.1.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Karan/Desktop/Dropbox/Eclipse Projects/MoodicPlayer/lib/mail.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Karan/Desktop/Dropbox/Eclipse Projects/MoodicPlayer/lib/gwt2swf-0.6.0.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Karan/Desktop/Dropbox/Eclipse Projects/MoodicPlayer/lib/lastfm-java-0.1.2.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Karan/Desktop/Dropbox/Eclipse Projects/MoodicPlayer/lib/jdom-2.0.4.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
