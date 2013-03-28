@@ -1,3 +1,12 @@
+/*******************************************************
+ * 
+ * Karan Goel, 2013
+ * karan@goel.im
+ * 
+ * TODO: Write this comment!
+ * 
+ *******************************************************/
+
 package im.goel.MoodicPlayer;
 
 /**
@@ -44,17 +53,13 @@ import utils.Moods;
 
 public class MoodicPlayer implements ActionListener, PropertyChangeListener {
 
-	/**
-	 * @param args
-	 * @throws ServiceException 
-	 * @throws IOException 
-	 */
 	public static void main(String[] args) throws IOException {
 		new MoodicPlayer();
 	}
 
-	private List<TrackInfo> allTracks;
-	private List<String> mbids;
+	private List<TrackInfo> allTracks; // Stores all tracks found for all moods
+	private List<String> mbids; // Stores mbids found for all moods
+	
 	private Moods moodObj = new Moods();
 	private JFrame frame;
 	private JPanel north, south;
@@ -88,26 +93,36 @@ public class MoodicPlayer implements ActionListener, PropertyChangeListener {
 		});
 	}
 
+	/**
+	 * Keeps track of events on GUI elements.
+	 */
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == go) {
+			// Main button is pressed
 			progress.setIndeterminate(true);
-			go.setEnabled(false);
+			go.setEnabled(false); // disable button
 			Task task = new Task();
 			task.addPropertyChangeListener(this);
-			task.execute();
+			task.execute(); // start the magic!
 		}
 	}
 
+	/**
+	 * Keeps track of the progress to notify the progress bar
+	 * to change its value appropriately.
+	 */
 	public void propertyChange(PropertyChangeEvent e) {
 		if ("progress" == e.getPropertyName()) {
 			int p = (Integer) e.getNewValue();
-			progress.setIndeterminate(false);
-			System.out.println(p * (100 / mbids.size()) + (100 % mbids.size()));
+			progress.setIndeterminate(false); // Because we know how much change we need
 			progress.setValue(p * (100 / mbids.size()) + (100 % mbids.size()));
 		}
 	}
 
 	//********************** BUILD GUI **********************//
+	/**
+	 * Initializes the main frame and sets its properties.
+	 */
 	private void initializeFrame() {
 		frame = new JFrame();
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -118,23 +133,25 @@ public class MoodicPlayer implements ActionListener, PropertyChangeListener {
 		frame.setLayout(new BorderLayout());
 	}
 
+	/**
+	 * Initializes the north panel and sets its properties.
+	 */
 	private void initializeNorth() {
 		north = new JPanel(new GridLayout(1, 3));
 		moodSelector = new JComboBox<String>(moodObj.getMoods());
 		go = new JButton("Play");
 		go.addActionListener(this);
-		initializeProgress();
+		progress = new JProgressBar(0, 100);
+		progress.setValue(0);
 		north.add(moodSelector);
 		north.add(go);
 		north.add(progress);
 		north.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 	}
 
-	private void initializeProgress() {
-		progress = new JProgressBar(0, 100);
-		progress.setValue(0);
-	}
-
+	/**
+	 * Initializes the south panel and sets its properties. 
+	 */
 	private void initializeSouth() {
 		south = new JPanel(new BorderLayout(1, 2));
 		south.add(new JLabel("Created by Karan Goel || http://www.goel.im"));
@@ -143,40 +160,65 @@ public class MoodicPlayer implements ActionListener, PropertyChangeListener {
 	//********************** BUILD GUI **********************//
 
 
+	/**
+	 * This class is meant to process all things in a background
+	 * thread.
+	 * @author Karan Goel
+	 */
 	public class Task extends SwingWorker<Void, Object> {
 
+		private static final String LIMIT = "5"; // number of tracks per tag to find
+
 		@Override
+		/**
+		 * Everything in this method is done in a separate thread
+		 * and not EDT!
+		 */
 		protected Void doInBackground() {
+			//System.out.println(javax.swing.SwingUtilities.isEventDispatchThread());
 			String mood = moodSelector.getSelectedItem().toString().toLowerCase();
 			List<String> subMoods = moodObj.getSubMoods(mood);
 			String key = "3a5d7dcb68d7fb252365acc1ed4eb32d";
-			mbids = getAllMbids(subMoods, key);
+			
+			mbids = getAllMbids(subMoods, key); // Find all mbids for given moods
 			int currentProgress = 0;
-			int maxProgress = mbids.size();
-			//Initialize progress property.
+			int maxProgress = mbids.size(); // Important so we don't loop unnecessarily
 			setProgress(1);
+			
 			allTracks = new ArrayList<TrackInfo>();
 			while (currentProgress < maxProgress) {
 				// Make progress.
 				// Run this once for ever mbid
-				getAllTracksForMbid(mbids.get(currentProgress), key);
+				getTrackInfoForMbid(mbids.get(currentProgress), key);
 				currentProgress = allTracks.size();
 				setProgress(Math.min(currentProgress, maxProgress));
 			}
 			return null;
 		}
 
+		/**
+		 * This method runs in EDT after background thread is completed.
+		 */
 		public void done() {
+			//System.out.println(javax.swing.SwingUtilities.isEventDispatchThread());
 			go.setEnabled(true);
 			System.out.println(allTracks.toString());
 		}
 
+		/**
+		 * Returns a list of string of mbids for upto LIMIT tracks for each
+		 * tag (submood)
+		 * @param subMoods - a list of moods
+		 * @param key - last.fm API key
+		 * @return list of string of mbids for upto LIMIT tracks for each
+		 * tag (submood)
+		 */
 		private List<String> getAllMbids(List<String> subMoods, String key) {
 			// START building list of MBID
 			List<String> allMbids = new ArrayList<String>();
 			for (String tag : subMoods) {
 				String urlToParse = "http://ws.audioscrobbler.com/2.0/?method=tag.gettoptracks&" +
-						"tag=" + tag + "&api_key=" + key + "&limit=5";
+						"tag=" + tag + "&api_key=" + key + "&limit=" + LIMIT;
 				try {
 					List<Element> list = getList(urlToParse, "tag.gettoptracks");
 					for (int i = 0; i < list.size(); i++) {
@@ -202,7 +244,13 @@ public class MoodicPlayer implements ActionListener, PropertyChangeListener {
 			return allMbids;
 		}
 
-		private void getAllTracksForMbid(String mbid, String key) {
+		/**
+		 * For a given mbid, find the required information, and store
+		 * it as a TrackInfo object in the list.
+		 * @param mbid of track to find information
+		 * @param key - last.fm API key
+		 */
+		private void getTrackInfoForMbid(String mbid, String key) {
 			// START building list of Info
 			String urlToParse = "http://ws.audioscrobbler.com/2.0/?method=track.getInfo&" + 
 					"api_key=" + key + "&mbid=" + mbid;
@@ -230,10 +278,15 @@ public class MoodicPlayer implements ActionListener, PropertyChangeListener {
 			// END building list of Info
 		}
 
+		/**
+		 * Required for JDOM. Returns a list of Element's to be parser
+		 * found in the given URL.
+		 */
 		private List<Element> getList(String urlToParse, String method) throws IOException, JDOMException {
 			SAXBuilder builder = new SAXBuilder();
 			URL website = new URL(urlToParse);
 			ReadableByteChannel rbc = Channels.newChannel(website.openStream());
+			@SuppressWarnings("resource")
 			FileOutputStream fos = new FileOutputStream("request.xml");
 			fos.getChannel().transferFrom(rbc, 0, 1 << 24);
 			
