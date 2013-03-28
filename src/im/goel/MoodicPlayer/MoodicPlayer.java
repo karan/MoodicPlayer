@@ -80,6 +80,7 @@ public class MoodicPlayer implements ActionListener {
 
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == go) {
+			long start = System.currentTimeMillis();
 			allTracks = new ArrayList<TrackInfo>();
 			String mood = moodSelector.getSelectedItem().toString().toLowerCase();
 			List<String> subMoods = moodObj.getSubMoods(mood);
@@ -92,6 +93,10 @@ public class MoodicPlayer implements ActionListener {
 			for (String tag : subMoods) {
 				allTracksForSubMoods.addAll(Tag.getTopTracks(tag, key));
 			}
+			
+			for (Track t : allTracksForSubMoods) {
+				Track info = Track.getInfo(t.getArtist(), t.getMbid(), key);
+			}
 
 			for (Track track : allTracksForSubMoods) {
 				TrackInfo tempTrack = new TrackInfo(track.getName(), track.getArtist());
@@ -102,6 +107,10 @@ public class MoodicPlayer implements ActionListener {
 			for (TrackInfo track : allTracks) {
 				System.out.println(track.toString());
 			}
+			
+			long end = System.currentTimeMillis();
+			
+			System.out.println(end - start + " ms");
 		}
 	}	
 

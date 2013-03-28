@@ -33,6 +33,10 @@ public class isRecognizedTest {
 		System.out.println();
 		System.out.println();
 		
+		for (Track t : allTracksForTag) {
+			System.out.println(t.getName() + " ----> " + t.getPlaycount());
+		}
+		
 		// Transfer all tracks that are recognised
 		int removeCount = 0;
 		for (Track track : allTracksForTag) {
