@@ -1,6 +1,7 @@
 MoodicPlayer
 ============
 
+<<<<<<< HEAD
 Scrapes songs from last.fm based on your mood.
 
 Project Closed!
@@ -19,3 +20,6 @@ authentication, which is bad design, and I refuse to implement that (for
 now).
 
 Hence, I'm dropping this project for good (for now).
+=======
+Using last.fm API, builds a playlist for users based on their mood.
+>>>>>>> Need to organize the files.
