@@ -26,17 +26,26 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.SwingWorker;
@@ -53,19 +62,16 @@ import utils.Moods;
 
 public class MoodicPlayer implements ActionListener, PropertyChangeListener {
 
+	private static final String key = "";
+	private static final String secret = "";
+
 	public static void main(String[] args) throws IOException {
 		new MoodicPlayer();
 	}
 
 	private List<TrackInfo> allTracks; // Stores all tracks found for all moods
 	private List<String> mbids; // Stores mbids found for all moods
-	
 	private Moods moodObj = new Moods();
-	private JFrame frame;
-	private JPanel north, south;
-	private JProgressBar progress;
-	private JComboBox<String> moodSelector;
-	private JButton go;
 
 	private MoodicPlayer() {
 		try {
@@ -83,11 +89,10 @@ public class MoodicPlayer implements ActionListener, PropertyChangeListener {
 		javax.swing.SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
 				// Create and show GUI
-				initializeFrame();		
+				initializeFrame();
+				initializeMenu();
 				initializeNorth();
-				initializeSouth();
-				frame.add(north, BorderLayout.NORTH);
-				frame.add(south, BorderLayout.SOUTH);
+				frame.add(north, BorderLayout.CENTER);
 				frame.setVisible(true);
 			}
 		});
@@ -104,6 +109,42 @@ public class MoodicPlayer implements ActionListener, PropertyChangeListener {
 			Task task = new Task();
 			task.addPropertyChangeListener(this);
 			task.execute(); // start the magic!
+		} else if (e.getSource() == lastfm) {
+			/*
+			 * http://www.last.fm/api/desktopauth
+			 * 2. Fetch a request token
+			 * 3. Request authorization from the user
+			 * 4. Fetch A Web Service Session
+			 * 5. Make authenticated web service calls
+			 * 6. Sign your calls
+			 */
+			try {
+				// 2. Fetch a request token
+				String token = getToken();
+				System.out.println(token);
+				// 3. Request authorization from the user
+				String authURL = "http://www.last.fm/api/auth/?api_key=" + key + "&token=" + token;
+				java.awt.Desktop browser = java.awt.Desktop.getDesktop();
+				java.net.URI uri = new java.net.URI(authURL);
+				browser.browse(uri);
+				// 4. Fetch A Web Service Session
+				//String sessionKey = getKey(token);
+				//System.out.println(sessionKey);
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			} catch (JDOMException e1) {
+				e1.printStackTrace();
+			} catch (URISyntaxException e1) {
+				e1.printStackTrace();
+			}
+		} else if (e.getSource() == about) {
+			String message = "Moodic Player is a free and open source playlist builder\n" + 
+					"for last.fm. Simply add your account, select your mood and voilà!\n" + 
+					"a new playlist will be ready for you in seconds!\n\n" + 
+					"Now give beats to your moods!\n\n" + 
+					"Open source project by Karan Goel (http://www.goel.im).\n" + 
+					"Source code at http://github.com/thekarangoel/MoodicPlayer/";
+			JOptionPane.showMessageDialog(frame, message, "About Moodic Player", JOptionPane.INFORMATION_MESSAGE);
 		}
 	}
 
@@ -119,14 +160,98 @@ public class MoodicPlayer implements ActionListener, PropertyChangeListener {
 		}
 	}
 
+	public String getToken() throws IOException, JDOMException {
+		String urlToParse = "http://ws.audioscrobbler.com/2.0/?method=auth.gettoken&" + 
+				"api_key=" + key + "&api_sig=" + secret;
+		try {
+			List<Element> list = getList(urlToParse, "auth.gettoken");
+			for (int i = 0; i < list.size(); i++) {
+				Element node = (Element) list.get(i);
+				return node.getText();
+			}
+		} catch (MalformedURLException e1) {
+			e1.printStackTrace();
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		} catch (JDOMException e1) {
+			e1.printStackTrace();
+		}
+		return null;
+	}
+
+	public String getKey(String token) throws NoSuchAlgorithmException {
+		MessageDigest md = MessageDigest.getInstance("MD5");
+		md.update(secret.getBytes());
+		byte byteData[] = md.digest();
+		//convert the byte to hex format
+		StringBuffer sb = new StringBuffer();
+		for (int i = 0; i < byteData.length; i++) {
+			sb.append(Integer.toString((byteData[i] & 0xff) + 0x100, 16).substring(1));
+		}
+		String urlToParse = "http://ws.audioscrobbler.com/2.0/?method=auth.getSession&" + 
+				"api_key=" + key + "&api_sig=" + sb.toString() + "&token=" + token;
+		try {
+			List<Element> list = getList(urlToParse, "auth.getSession");
+			for (int i = 0; i < list.size(); i++) {
+				Element node = (Element) list.get(i);
+				return node.getChildText("key");
+			}
+		} catch (MalformedURLException e1) {
+			e1.printStackTrace();
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		} catch (JDOMException e1) {
+			e1.printStackTrace();
+		}
+		return null;
+	}
+
+	/**
+	 * Required for JDOM. Returns a list of Element's to be parser
+	 * found in the given URL.
+	 */
+	private List<Element> getList(String urlToParse, String method) throws IOException, JDOMException {
+		SAXBuilder builder = new SAXBuilder();
+		URL website = new URL(urlToParse);
+		ReadableByteChannel rbc = Channels.newChannel(website.openStream());
+		@SuppressWarnings("resource")
+		FileOutputStream fos = new FileOutputStream("request.xml");
+		fos.getChannel().transferFrom(rbc, 0, 1 << 24);
+
+		File xmlFile = new File("request.xml");
+
+		Document document = (Document) builder.build(xmlFile);
+		Element rootNode = document.getRootElement();
+
+		if (method.equals("tag.gettoptracks")) {
+			return rootNode.getChildren("toptracks");
+		} else if (method.equals("track.getInfo")) {
+			return rootNode.getChildren("track");
+		} else if (method.equals("auth.gettoken")) {
+			return rootNode.getChildren("token");
+		} else if (method.equals("auth.getSession")) {
+			return rootNode.getChildren("session");
+		} else {
+			return null;
+		}
+	}
+
 	//********************** BUILD GUI **********************//
+	private JFrame frame;
+	private JPanel north;
+	private JProgressBar progress;
+	private JComboBox<String> moodSelector;
+	private JButton go;
+	private JMenuBar menubar;
+	private JMenuItem lastfm, about;
+
 	/**
 	 * Initializes the main frame and sets its properties.
 	 */
 	private void initializeFrame() {
 		frame = new JFrame();
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setSize(new Dimension(300, 110));
+		frame.setSize(new Dimension(350, 110));
 		frame.setLocation(new Point(400, 300));
 		frame.setTitle("Moodic Player");
 		frame.setResizable(false);
@@ -139,7 +264,7 @@ public class MoodicPlayer implements ActionListener, PropertyChangeListener {
 	private void initializeNorth() {
 		north = new JPanel(new GridLayout(1, 3));
 		moodSelector = new JComboBox<String>(moodObj.getMoods());
-		go = new JButton("Play");
+		go = new JButton("Build");
 		go.addActionListener(this);
 		progress = new JProgressBar(0, 100);
 		progress.setValue(0);
@@ -149,13 +274,15 @@ public class MoodicPlayer implements ActionListener, PropertyChangeListener {
 		north.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 	}
 
-	/**
-	 * Initializes the south panel and sets its properties. 
-	 */
-	private void initializeSouth() {
-		south = new JPanel(new BorderLayout(1, 2));
-		south.add(new JLabel("Created by Karan Goel || http://www.goel.im"));
-		south.setBorder(BorderFactory.createEmptyBorder(15, 10, 5, 10));
+	private void initializeMenu() {
+		menubar = new JMenuBar();
+		lastfm = new JMenuItem("Add last.fm Account");
+		lastfm.addActionListener(this);
+		about = new JMenuItem("About");
+		about.addActionListener(this);
+		menubar.add(lastfm);
+		menubar.add(about);
+		frame.setJMenuBar(menubar);
 	}
 	//********************** BUILD GUI **********************//
 
@@ -178,18 +305,17 @@ public class MoodicPlayer implements ActionListener, PropertyChangeListener {
 			//System.out.println(javax.swing.SwingUtilities.isEventDispatchThread());
 			String mood = moodSelector.getSelectedItem().toString().toLowerCase();
 			List<String> subMoods = moodObj.getSubMoods(mood);
-			String key = "3a5d7dcb68d7fb252365acc1ed4eb32d";
-			
-			mbids = getAllMbids(subMoods, key); // Find all mbids for given moods
+
+			mbids = getAllMbids(subMoods); // Find all mbids for given moods
 			int currentProgress = 0;
 			int maxProgress = mbids.size(); // Important so we don't loop unnecessarily
 			setProgress(1);
-			
+
 			allTracks = new ArrayList<TrackInfo>();
 			while (currentProgress < maxProgress) {
 				// Make progress.
 				// Run this once for ever mbid
-				getTrackInfoForMbid(mbids.get(currentProgress), key);
+				getTrackInfoForMbid(mbids.get(currentProgress));
 				currentProgress = allTracks.size();
 				setProgress(Math.min(currentProgress, maxProgress));
 			}
@@ -209,11 +335,10 @@ public class MoodicPlayer implements ActionListener, PropertyChangeListener {
 		 * Returns a list of string of mbids for upto LIMIT tracks for each
 		 * tag (submood)
 		 * @param subMoods - a list of moods
-		 * @param key - last.fm API key
 		 * @return list of string of mbids for upto LIMIT tracks for each
 		 * tag (submood)
 		 */
-		private List<String> getAllMbids(List<String> subMoods, String key) {
+		private List<String> getAllMbids(List<String> subMoods) {
 			// START building list of MBID
 			List<String> allMbids = new ArrayList<String>();
 			for (String tag : subMoods) {
@@ -248,9 +373,8 @@ public class MoodicPlayer implements ActionListener, PropertyChangeListener {
 		 * For a given mbid, find the required information, and store
 		 * it as a TrackInfo object in the list.
 		 * @param mbid of track to find information
-		 * @param key - last.fm API key
 		 */
-		private void getTrackInfoForMbid(String mbid, String key) {
+		private void getTrackInfoForMbid(String mbid) {
 			// START building list of Info
 			String urlToParse = "http://ws.audioscrobbler.com/2.0/?method=track.getInfo&" + 
 					"api_key=" + key + "&mbid=" + mbid;
@@ -276,30 +400,6 @@ public class MoodicPlayer implements ActionListener, PropertyChangeListener {
 				e1.printStackTrace();
 			}
 			// END building list of Info
-		}
-
-		/**
-		 * Required for JDOM. Returns a list of Element's to be parser
-		 * found in the given URL.
-		 */
-		private List<Element> getList(String urlToParse, String method) throws IOException, JDOMException {
-			SAXBuilder builder = new SAXBuilder();
-			URL website = new URL(urlToParse);
-			ReadableByteChannel rbc = Channels.newChannel(website.openStream());
-			@SuppressWarnings("resource")
-			FileOutputStream fos = new FileOutputStream("request.xml");
-			fos.getChannel().transferFrom(rbc, 0, 1 << 24);
-			
-			File xmlFile = new File("request.xml");
-			
-			Document document = (Document) builder.build(xmlFile);
-			Element rootNode = document.getRootElement();
-			
-			if (method.equals("tag.gettoptracks")) {
-				return rootNode.getChildren("toptracks");
-			} else {
-				return rootNode.getChildren("track");
-			}
 		}
 
 	}
