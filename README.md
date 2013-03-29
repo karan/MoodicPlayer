@@ -3,6 +3,7 @@ MoodicPlayer
 
 Scrapes songs from last.fm based on your mood.
 
+Project Closed!
 ============
 
 Originally, I wanted to embed the last.fm player in my swing GUI, but
