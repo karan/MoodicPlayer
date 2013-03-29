@@ -1,4 +1,4 @@
 MoodicPlayer
 ============
 
-Minimal music player to give beats to your mood!
+Using last.fm API, builds a playlist for users based on their mood.
