@@ -27,9 +27,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.io.UnsupportedEncodingException;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.security.MessageDigest;
@@ -172,6 +173,7 @@ public class MoodicPlayer implements ActionListener, PropertyChangeListener {
 					"\"Build\" to build your playlist";
 			JOptionPane.showMessageDialog(null, message, "Authentication Successful", 
 					JOptionPane.INFORMATION_MESSAGE);
+			lastfm.setEnabled(false);
 			go.setEnabled(true);
 		} else if (e.getSource() == about) {
 			String message = "Moodic Player is a free and open source playlist builder\n" + 
@@ -469,56 +471,51 @@ public class MoodicPlayer implements ActionListener, PropertyChangeListener {
 
 		/**
 		 * Builds a playlist for the user based on tracks found earlier.
+		 * @throws NoSuchAlgorithmException 
+		 * @throws IOException 
 		 * @throws Exception
 		 */
-		private void buildPlaylist() {
+		private void buildPlaylist() throws IOException, NoSuchAlgorithmException {
 			String mood = moodSelector.getSelectedItem().toString();
-			String params = "https://ws.audioscrobbler.com/2.0/?method=playlist.create&title=" + mood + "&api_key=" + key + 
-					"&description=" + "A playlist for " + mood + " created" + 
-					"using Moodic Player." + "&api_sig=" + hashedSig + "&sk=" + sessionKey;
+			MessageDigest md = MessageDigest.getInstance("MD5");
+			String apiSig = "api_key" + key + "methodplaylist.createsk" + sessionKey + "title" + mood + secret;		
+			md.update(apiSig.getBytes());
+			byte byteData[] = md.digest();
+			//convert the byte to hex format
+			StringBuffer sb = new StringBuffer();
+			for (int i = 0; i < byteData.length; i++) {
+				sb.append(Integer.toString((byteData[i] & 0xff) + 0x100, 16).substring(1));
+			}
+			hashedSig = sb.toString();
 
 			System.out.println("api_key = " + key);
 			System.out.println("api_sig = " + hashedSig);
 			System.out.println("session key = " + sessionKey);
 
+			String urlParameters = URLEncoder.encode("method=playlist.create" + "&api_key=" + key + 
+					"&api_sig=" + hashedSig + "&sk=" + sessionKey + "&title=" + mood, "UTF-8");
+			String request = "https://ws.audioscrobbler.com/2.0/";
 			try {
-				//URL u = parseUrl(params);
-				//String urlParameters = u.toString();
-				//String request = "https://ws.audioscrobbler.com/2.0/";
-				URL url = new URL(params);
-				HttpURLConnection connection = (HttpURLConnection) url.openConnection();           
+				URL url = new URL(request);
+				HttpURLConnection connection = (HttpURLConnection) url.openConnection();;     
 				connection.setDoOutput(true);
 				connection.setDoInput(true);
 				connection.setInstanceFollowRedirects(false); 
 				connection.setRequestMethod("POST"); 
 				connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded"); 
 				connection.setRequestProperty("charset", "utf-8");
-				connection.setRequestProperty("Content-Length", "" + Integer.toString(params.getBytes().length));
+				connection.setRequestProperty("Content-Length", "" + Integer.toString(urlParameters.getBytes().length));
 				connection.setUseCaches (false);
 
-				DataOutputStream wr = new DataOutputStream(connection.getOutputStream ());
-				wr.writeBytes(params);
+				DataOutputStream wr = new DataOutputStream(connection.getOutputStream());
+				wr.writeBytes(urlParameters);
 				wr.flush();
 				wr.close();
 				connection.disconnect();
 			} catch (MalformedURLException e) {
 				e.printStackTrace();
-			} catch (Exception e) {
-				e.printStackTrace();
 			}
 		}
-
-		/**
-		 * 
-		 * @param s
-		 * @return
-		 * @throws Exception
-		 */
-		public URL parseUrl(String s) throws Exception {
-			URL u = new URL(s);
-			return new URI(u.getProtocol(),	u.getAuthority(), u.getPath(), u.getQuery(), u.getRef()).toURL();
-		}
-
 	}
 
 }
