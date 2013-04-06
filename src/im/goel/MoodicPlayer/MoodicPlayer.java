@@ -471,9 +471,9 @@ public class MoodicPlayer implements ActionListener, PropertyChangeListener {
 		 * Builds a playlist for the user based on tracks found earlier.
 		 * @throws Exception
 		 */
-		private void buildPlaylist() throws Exception {
+		private void buildPlaylist() {
 			String mood = moodSelector.getSelectedItem().toString();
-			String params = "method=playlist.create&title=" + mood + "&api_key=" + key + 
+			String params = "https://ws.audioscrobbler.com/2.0/?method=playlist.create&title=" + mood + "&api_key=" + key + 
 					"&description=" + "A playlist for " + mood + " created" + 
 					"using Moodic Player." + "&api_sig=" + hashedSig + "&sk=" + sessionKey;
 
@@ -481,26 +481,31 @@ public class MoodicPlayer implements ActionListener, PropertyChangeListener {
 			System.out.println("api_sig = " + hashedSig);
 			System.out.println("session key = " + sessionKey);
 
-			URL u = parseUrl(params);
-			String urlParameters = u.toString();
-			String request = "http://ws.audioscrobbler.com/2.0/";
-			URL url = new URL(request);
-			HttpURLConnection connection = (HttpURLConnection) url.openConnection();           
-			connection.setDoOutput(true);
-			connection.setDoInput(true);
-			connection.setInstanceFollowRedirects(false); 
-			connection.setRequestMethod("POST"); 
-			connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded"); 
-			connection.setRequestProperty("charset", "utf-8");
-			connection.setRequestProperty("Content-Length", "" + Integer.toString(urlParameters.getBytes().length));
-			connection.setUseCaches (false);
+			try {
+				//URL u = parseUrl(params);
+				//String urlParameters = u.toString();
+				//String request = "https://ws.audioscrobbler.com/2.0/";
+				URL url = new URL(params);
+				HttpURLConnection connection = (HttpURLConnection) url.openConnection();           
+				connection.setDoOutput(true);
+				connection.setDoInput(true);
+				connection.setInstanceFollowRedirects(false); 
+				connection.setRequestMethod("POST"); 
+				connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded"); 
+				connection.setRequestProperty("charset", "utf-8");
+				connection.setRequestProperty("Content-Length", "" + Integer.toString(params.getBytes().length));
+				connection.setUseCaches (false);
 
-			DataOutputStream wr = new DataOutputStream(connection.getOutputStream ());
-			wr.writeBytes(urlParameters);
-			wr.flush();
-			wr.close();
-			connection.disconnect();
-
+				DataOutputStream wr = new DataOutputStream(connection.getOutputStream ());
+				wr.writeBytes(params);
+				wr.flush();
+				wr.close();
+				connection.disconnect();
+			} catch (MalformedURLException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 
 		/**
