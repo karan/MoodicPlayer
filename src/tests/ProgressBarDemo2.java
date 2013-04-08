@@ -41,7 +41,11 @@ public class ProgressBarDemo2 extends JPanel
                               implements ActionListener, 
                                          PropertyChangeListener {
 
-    private JProgressBar progressBar;
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	private JProgressBar progressBar;
     private JButton startButton;
     private JTextArea taskOutput;
     private Task task;

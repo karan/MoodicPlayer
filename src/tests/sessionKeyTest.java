@@ -69,7 +69,7 @@ public class sessionKeyTest {
 				"api_key=" + key + "&api_sig=" + secret;
 		try {
 			List<Element> list = getList(urlToParse, "auth.gettoken");
-			for (int i = 0; i < list.size(); i++) {
+			for (int i = 0; i < list.size();) {
 				Element node = (Element) list.get(i);
 				return node.getText();
 			}
