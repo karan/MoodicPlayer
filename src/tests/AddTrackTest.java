@@ -1,47 +1,72 @@
 package tests;
 
-import java.io.BufferedWriter;
 import java.io.DataOutputStream;
-import java.io.FileWriter;
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Date;
-import java.util.Scanner;
+import java.util.List;
 
-public class PlaylistCreateTest {
+import org.jdom2.Document;
+import org.jdom2.Element;
+import org.jdom2.JDOMException;
+import org.jdom2.input.SAXBuilder;
+
+
+public class AddTrackTest {
 
 	private static final String key = ""; // Add your API key
 	private static final String secret = ""; // Add your API secret
 	private static final String sessionKey = ""; // Add your session key
-	
-	public static void main(String[] args) throws UnsupportedEncodingException {
-		System.out.println("Starting test for creating playlist...");
-		buildPlaylist();
-	}
-	
-	private static void buildPlaylist() throws UnsupportedEncodingException {
 
-		String mood = "Happy";
-		System.out.println("\nMood is " + mood + "\n\n");
+	public static void main(String[] args) {
+		System.out.println("Starting test for adding tracks to playlist...");
+		int playlistID = -1;
+		List<Element> list = null;
+		try {
+			list = getList();
+		} catch (JDOMException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		for (int i = 0; i < list.size(); i++) {
+			Element node = (Element) list.get(i);
+			List<Element> subList = node.getChildren("playlist");
+			for (int j = 0; j < subList.size(); j++) {
+				Element subNode = (Element) subList.get(j);
+				playlistID = Integer.parseInt(subNode.getChildText("id"));
+				System.out.println(playlistID);
+			}
+		}
+		System.out.println("Trying to add tracks to playlist...");
+		addTracksToPlaylist(playlistID);
+	}
+
+	private static List<Element> getList() throws JDOMException, IOException {
+		File xmlFile = new File("request.xml");
+		SAXBuilder builder = new SAXBuilder();
+		Document document = (Document) builder.build(xmlFile);
+		Element rootNode = document.getRootElement();
+		return rootNode.getChildren("playlists");
+	}
+
+	private static void addTracksToPlaylist(int playlistID) {
+		String track = "Paradise";
+		String artist = "Coldplay";
+
 		MessageDigest md = null;
-		String title = URLEncoder.encode(mood + " " + new Date().getTime(), "UTF-8");
-		String description = URLEncoder.encode("For when you are " + mood + ". Created by MoodicPlayer.", "UTF-8");
-		
 		try {
 			md = MessageDigest.getInstance("MD5");
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
 		}
-		String apiSig = "api_key" + key + "description" + description + "methodplaylist.createsk" + 
-					sessionKey + "title" + title + secret;
+		String apiSig = "api_key" + key + "artist" + artist + "methodplaylist.addTrackplaylistID" + 
+				playlistID + "sk" + sessionKey + "track" + track + secret;
 		md.update(apiSig.getBytes());
 		byte byteData[] = md.digest();
 		//convert the byte to hex format
@@ -58,8 +83,9 @@ public class PlaylistCreateTest {
 		// FOR DEBUGGING
 
 		String urlParameters = null;
-		urlParameters = "method=playlist.create&api_key="+ key + "&api_sig=" + hashedSig +
-				"&description=" + description + "&sk=" + sessionKey + "&title=" + title;
+		urlParameters = "method=playlist.addTrack" + "&api_key=" + key + "&artist=" + artist + "&playlistID=" + 
+				playlistID + "&sk=" + sessionKey + "&track=" + track + "&api_sig=" + hashedSig;
+
 		String request = "http://ws.audioscrobbler.com/2.0/";
 
 		URL url = null;
@@ -67,7 +93,7 @@ public class PlaylistCreateTest {
 			url = new URL(request);
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
-		}
+		} 
 		HttpURLConnection connection = null;
 		try {
 			connection = (HttpURLConnection) url.openConnection();
@@ -97,25 +123,6 @@ public class PlaylistCreateTest {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
-		InputStream is = null;
-		Scanner s = null;
-		try {
-			if (connection.getResponseCode() != 200) {
-				s = new Scanner(connection.getErrorStream());
-			} else {
-				is = connection.getInputStream();
-				s = new Scanner(is);
-			}
-			s.useDelimiter("\\Z");
-			String response = s.next();
-			System.out.println("\nResponse: " + response + "\n\n");
-			BufferedWriter out = new BufferedWriter(new FileWriter("requestCreate.xml"));
-	        out.write(response);
-	        out.close();
-		} catch (IOException e2) {
-			e2.printStackTrace();
-		}
 		
 		// FOR DEBUGGING
 		try {
@@ -125,7 +132,18 @@ public class PlaylistCreateTest {
 			e.printStackTrace();
 		}
 		// FOR DEBUGGING
+
+
+//		InputStream is = connection.getInputStream();
+//		//Use transformer to transform
+//		TransformerFactory transFactory = TransformerFactory.newInstance();
+//		Transformer t= transFactory.newTransformer();
+//		t.setOutputProperty(OutputKeys.METHOD, "xml");
+//		t.setOutputProperty(OutputKeys.INDENT,"yes");                
+//		Source input = new StreamSource(is);
+//		Result output = new StreamResult(new FileOutputStream("requestAdd.xml"));
+//		transFactory.newTransformer().transform(input, output);
+
 		connection.disconnect();
 	}
-
 }

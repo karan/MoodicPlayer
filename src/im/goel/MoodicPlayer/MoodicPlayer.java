@@ -3,7 +3,10 @@
  * Karan Goel, 2013
  * karan@goel.im
  * 
- * TODO: Write this comment!
+ * MoodicPlayer is the coolest app I've ever written!
+ * nuf said!
+ * 
+ * It generates a last.fm playlist based on your mood.
  * 
  *******************************************************/
 
@@ -26,6 +29,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -38,7 +42,9 @@ import java.nio.channels.ReadableByteChannel;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Scanner;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -53,6 +59,15 @@ import javax.swing.JProgressBar;
 import javax.swing.SwingWorker;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Result;
+import javax.xml.transform.Source;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
 
 import org.jdom2.Document;
 import org.jdom2.Element;
@@ -61,7 +76,6 @@ import org.jdom2.input.SAXBuilder;
 
 import utils.Moods;
 
-//TODO: error code checking
 
 public class MoodicPlayer implements ActionListener, PropertyChangeListener {
 
@@ -193,7 +207,7 @@ public class MoodicPlayer implements ActionListener, PropertyChangeListener {
 		if ("progress" == e.getPropertyName()) {
 			int p = (Integer) e.getNewValue();
 			progress.setIndeterminate(false); // Because we know how much change we need
-			progress.setValue(p * (100 / mbids.size()) + (100 % mbids.size()));
+			progress.setValue((p * (100 / mbids.size()) + (100 % mbids.size())) / 2);
 		}
 	}
 
@@ -247,38 +261,40 @@ public class MoodicPlayer implements ActionListener, PropertyChangeListener {
 	}
 
 	/**
-	 * Required for JDOM. Returns a list of Element's to be parser
+	 * Required for JDOM. Returns a list of Element's to be parsed
 	 * found in the given URL.
 	 */
 	private List<Element> getList(String urlToParse, String method) {
-		SAXBuilder builder = new SAXBuilder();
-		URL website = null;
-		try {
-			website = new URL(urlToParse);
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		}
-		ReadableByteChannel rbc = null;
-		try {
-			rbc = Channels.newChannel(website.openStream());
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		FileOutputStream fos = null;
-		try {
-			fos = new FileOutputStream("request.xml");
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
-		try {
-			fos.getChannel().transferFrom(rbc, 0, 1 << 24);
-			fos.close();
-		} catch (IOException e) {
-			e.printStackTrace();
+		if (urlToParse != null) {
+			URL website = null;
+			try {
+				website = new URL(urlToParse);
+			} catch (MalformedURLException e) {
+				e.printStackTrace();
+			}
+			ReadableByteChannel rbc = null;
+			try {
+				rbc = Channels.newChannel(website.openStream());
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			FileOutputStream fos = null;
+			try {
+				fos = new FileOutputStream("request.xml");
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			}
+			try {
+				fos.getChannel().transferFrom(rbc, 0, 1 << 24);
+				fos.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 
 		File xmlFile = new File("request.xml");
 
+		SAXBuilder builder = new SAXBuilder();
 		Document document = null;
 		try {
 			document = (Document) builder.build(xmlFile);
@@ -297,6 +313,8 @@ public class MoodicPlayer implements ActionListener, PropertyChangeListener {
 			return rootNode.getChildren("token");
 		} else if (method.equals("auth.getSession")) {
 			return rootNode.getChildren("session");
+		} else if (method.equals("playlist.addTrack")) {
+			return rootNode.getChildren("playlists");
 		} else {
 			return null;
 		}
@@ -408,7 +426,28 @@ public class MoodicPlayer implements ActionListener, PropertyChangeListener {
 			System.out.println("Number of tracks in allTracks = " + allTracks.size());
 			// FOR DEBUGGING
 
+			// Build a single playlist
 			buildPlaylist();
+
+			// Now, request.xml contains the response from creating playlist
+			// Parse the xml to get the playlist ID
+			int playlistID = -1;
+			List<Element> list = null;
+			list = getList(null, "playlist.addTrack");
+			for (int i = 0; i < list.size(); i++) {
+				Element node = (Element) list.get(i);
+				List<Element> subList = node.getChildren("playlist");
+				for (int j = 0; j < subList.size(); j++) {
+					Element subNode = (Element) subList.get(j);
+					playlistID = Integer.parseInt(subNode.getChildText("id"));
+				}
+			}
+			// Add tracks to the playlist
+			for (TrackInfo track : allTracks) {
+				addAllTracks(playlistID, track);
+				setProgress(currentProgress);
+				currentProgress++;
+			}
 			return null;
 		}
 
@@ -483,7 +522,6 @@ public class MoodicPlayer implements ActionListener, PropertyChangeListener {
 		 * @throws Exception
 		 */
 		private void buildPlaylist() {
-
 			String mood = moodSelector.getSelectedItem().toString();
 			MessageDigest md = null;
 			try {
@@ -492,7 +530,7 @@ public class MoodicPlayer implements ActionListener, PropertyChangeListener {
 				e.printStackTrace();
 			}
 			String apiSig = "api_key" + key + "descriptionFor when you are " + mood + ". Created by MoodicPlayer." + 
-					"methodplaylist.createsk" + sessionKey + "title" + mood + secret;		
+					"methodplaylist.createsk" + sessionKey + "title" + mood + " " + new Date().getTime() + secret;
 			md.update(apiSig.getBytes());
 			byte byteData[] = md.digest();
 			//convert the byte to hex format
@@ -502,20 +540,128 @@ public class MoodicPlayer implements ActionListener, PropertyChangeListener {
 			}
 			String hashedSig = sb.toString();
 
-			// FOR DEBUGGING
-			System.out.println("api_key = " + key);
-			System.out.println("api_sig = " + hashedSig);
-			System.out.println("session key = " + sessionKey);
-			// FOR DEBUGGING
-
 			String urlParameters = null;
 			try {
 				urlParameters = "method=playlist.create&api_key=" + key + "&api_sig=" + hashedSig +
-						"&sk=" + sessionKey + "&title=" + mood + "&description=" + 
+						"&sk=" + sessionKey + "&title=" + mood + " " + new Date().getTime() + "&description=" + 
 						URLEncoder.encode("For when you are " + mood + ". Created by MoodicPlayer.", "UTF-8");
 			} catch (UnsupportedEncodingException e1) {
 				e1.printStackTrace();
 			}
+			String request = "http://ws.audioscrobbler.com/2.0/";
+
+			
+			System.out.println("\n\napi_key = " + key);
+			System.out.println("api_sig = " + hashedSig);
+			System.out.println("Session key = " + sessionKey + "\n\n");
+			
+			
+			URL url = null;
+			try {
+				url = new URL(request);
+			} catch (MalformedURLException e) {
+				e.printStackTrace();
+			} 
+			HttpURLConnection connection = null;
+			try {
+				connection = (HttpURLConnection) url.openConnection();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}           
+			connection.setDoOutput(true);
+			connection.setDoInput(true);
+			connection.setInstanceFollowRedirects(false); 
+			try {
+				connection.setRequestMethod("POST");
+			} catch (ProtocolException e) {
+				e.printStackTrace();
+			} 
+			connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded"); 
+			connection.setRequestProperty("charset", "utf-8");
+			connection.setRequestProperty("Content-Length", "" + Integer.toString(urlParameters.getBytes().length));
+			connection.setRequestProperty("User-Agent", "MoodicPlayer http://www.goel.im"); 
+			connection.setUseCaches(false);
+
+			DataOutputStream wr = null;
+			try {
+				wr = new DataOutputStream(connection.getOutputStream());
+				wr.writeBytes(urlParameters);
+				wr.flush();
+				wr.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			
+			InputStream is = null;
+			Scanner s = null;
+			try {
+				if (connection.getResponseCode() != 200) {
+					s = new Scanner(connection.getErrorStream());
+				} else {
+					is = connection.getInputStream();
+					s = new Scanner(is);
+				}
+				s.useDelimiter("\\Z");
+				String response = s.next();
+				System.out.println("\nResponse: " + response + "\n\n");
+			} catch (IOException e2) {
+				e2.printStackTrace();
+			}
+
+			TransformerFactory transFactory = TransformerFactory.newInstance();
+			Transformer t = null;
+			try {
+				t = transFactory.newTransformer();
+			} catch (TransformerConfigurationException e) {
+				e.printStackTrace();
+			}
+			t.setOutputProperty(OutputKeys.METHOD, "xml");
+			t.setOutputProperty(OutputKeys.INDENT,"yes");                
+			Source input = new StreamSource(is);
+			Result output = null;
+			try {
+				output = new StreamResult(new FileOutputStream("request.xml"));
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			}
+			try {
+				transFactory.newTransformer().transform(input, output);
+			} catch (TransformerConfigurationException e) {
+				e.printStackTrace();
+			} catch (TransformerException e) {
+				e.printStackTrace();
+			}
+
+			connection.disconnect();
+		}
+
+		/**
+		 * Adds all tracks from allTracks into the playlist built.
+		 * @param playlistID
+		 * @param track
+		 */
+		private void addAllTracks(int playlistID, TrackInfo track) {
+			MessageDigest md = null;
+			try {
+				md = MessageDigest.getInstance("MD5");
+			} catch (NoSuchAlgorithmException e) {
+				e.printStackTrace();
+			}
+			String apiSig = "api_key" + key + "artist" + track.getTrackArtist() + "methodplaylist.addTrackplaylistID" + 
+					playlistID + "sk" + sessionKey + "track" + track.getTrackName() + secret;
+			md.update(apiSig.getBytes());
+			byte byteData[] = md.digest();
+			//convert the byte to hex format
+			StringBuffer sb = new StringBuffer();
+			for (int i = 0; i < byteData.length; i++) {
+				sb.append(Integer.toString((byteData[i] & 0xff) + 0x100, 16).substring(1));
+			}
+			String hashedSig = sb.toString();
+
+			String urlParameters = null;
+			urlParameters = "method=playlist.addTrack" + "&api_key=" + key + "&artist=" + track.getTrackArtist() + "&playlistID=" + 
+					playlistID + "&sk=" + sessionKey + "&track=" + track.getTrackName() + "&api_sig=" + hashedSig;
+
 			String request = "http://ws.audioscrobbler.com/2.0/";
 
 			URL url = null;
@@ -554,20 +700,8 @@ public class MoodicPlayer implements ActionListener, PropertyChangeListener {
 				e.printStackTrace();
 			}
 
-			// FOR DEBUGGING
-			try {
-				System.out.println("Response Code: " + connection.getResponseCode());
-				System.out.println("Response Message: " + connection.getResponseMessage()); 
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			// FOR DEBUGGING
-			
-			// TODO: show message of success/failure
-			
 			connection.disconnect();
 		}
-
 	}
 
 }
